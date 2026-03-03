@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>江华非遗后台管理系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#fff7ed', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdba74', 400: '#fb923c', 500: '#f97316', 600: '#ea580c', 700: '#c2410c', 800: '#9a3412', 900: '#7c2d12' },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .sidebar { transition: transform 0.3s ease; }
+    .sidebar.closed { transform: translateX(-100%); }
+    @media (min-width: 1024px) { .sidebar.closed { transform: translateX(0); } }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .modal { display: none; }
+    .modal.active { display: flex; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .toast { position: fixed; top: 20px; right: 20px; z-index: 9999; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- 登录页面 -->
+  <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md fade-in">
+      <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-drum text-4xl text-primary-600"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800">江华非遗后台管理</h1>
+        <p class="text-gray-500 mt-2">江华瑶族非物质文化遗产教学资源库系统</p>
+      </div>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+          <div class="relative">
+            <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="username" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="请输入用户名" value="admin">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+          <div class="relative">
+            <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="password" id="password" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="请输入密码" value="123456">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors">
+          <i class="fas fa-sign-in-alt mr-2"></i>登录
+        </button>
+      </form>
+      <p class="text-center text-sm text-gray-500 mt-4">默认账号: admin / 密码: 123456</p>
+    </div>
+  </div>
+
+  <!-- 主应用页面 -->
+  <div id="appPage" class="hidden min-h-screen flex">
+    <!-- 侧边栏 -->
+    <aside id="sidebar" class="sidebar fixed lg:static inset-y-0 left-0 w-64 bg-white shadow-lg z-40">
+      <div class="p-6 border-b">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-drum text-primary-600"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-gray-800">江华非遗</h2>
+            <p class="text-xs text-gray-500">后台管理系统</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4 space-y-1">
+        <a href="#" data-page="dashboard" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-50 text-primary-700">
+          <i class="fas fa-tachometer-alt w-5"></i>仪表盘
+        </a>
+        <a href="#" data-page="content" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+          <i class="fas fa-file-alt w-5"></i>内容管理
+        </a>
+        <a href="#" data-page="category" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+          <i class="fas fa-folder w-5"></i>分类管理
+        </a>
+        <a href="#" data-page="image" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+          <i class="fas fa-images w-5"></i>图片管理
+        </a>
+        <a href="#" data-page="stats" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+          <i class="fas fa-chart-bar w-5"></i>数据统计
+        </a>
+      </nav>
+      <div class="absolute bottom-0 left-0 right-0 p-4 border-t">
+        <button id="logoutBtn" class="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-red-600 hover:bg-red-50">
+          <i class="fas fa-sign-out-alt w-5"></i>退出登录
+        </button>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <div class="flex-1 flex flex-col lg:ml-0">
+      <!-- 顶部导航 -->
+      <header class="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <button id="sidebarToggle" class="lg:hidden p-2 rounded-lg hover:bg-gray-100">
+            <i class="fas fa-bars text-gray-600"></i>
+          </button>
+          <h2 id="pageTitle" class="text-xl font-bold text-gray-800">仪表盘</h2>
+        </div>
+        <div class="flex items-center gap-4">
+          <span id="currentTime" class="text-sm text-gray-500 hidden sm:block"></span>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-user text-primary-600 text-sm"></i>
+            </div>
+            <span class="text-sm font-medium text-gray-700 hidden sm:block">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- 页面内容 -->
+      <main class="flex-1 p-6 overflow-auto">
+        <!-- 仪表盘页面 -->
+        <div id="dashboardPage" class="page-content">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 mb-1">总内容数</p>
+                  <p id="totalCount" class="text-3xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-file-alt text-blue-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 mb-1">文化拾珠</p>
+                  <p id="artworkCount" class="text-3xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-palette text-purple-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 mb-1">古法技艺</p>
+                  <p id="techniqueCount" class="text-3xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-tools text-green-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 mb-1">动态资讯</p>
+                  <p id="newsCount" class="text-3xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-newspaper text-orange-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">分类统计</h3>
+              <div id="categoryStats" class="space-y-3"></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">快速操作</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <button onclick="showAddModal()" class="p-4 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors text-left">
+                  <i class="fas fa-plus-circle text-2xl mb-2"></i>
+                  <p class="font-medium">添加内容</p>
+                </button>
+                <button onclick="switchPage('content')" class="p-4 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-left">
+                  <i class="fas fa-list text-2xl mb-2"></i>
+                  <p class="font-medium">管理内容</p>
+                </button>
+                <button onclick="switchPage('image')" class="p-4 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors text-left">
+                  <i class="fas fa-images text-2xl mb-2"></i>
+                  <p class="font-medium">图片管理</p>
+                </button>
+                <button onclick="switchPage('stats')" class="p-4 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors text-left">
+                  <i class="fas fa-chart-bar text-2xl mb-2"></i>
+                  <p class="font-medium">数据统计</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 内容管理页面 -->
+        <div id="contentPage" class="page-content hidden">
+          <div class="bg-white rounded-xl shadow-sm">
+            <div class="p-6 border-b">
+              <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <h3 class="text-lg font-bold text-gray-800">内容列表</h3>
+                <div class="flex gap-2">
+                  <button onclick="exportJSON()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors" title="导出JSON文件">
+                    <i class="fas fa-download mr-2"></i>导出JSON
+                  </button>
+                  <label class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer" title="导入JSON文件">
+                    <i class="fas fa-upload mr-2"></i>导入JSON
+                    <input type="file" accept=".json" class="hidden" onchange="importJSON(this.files[0])">
+                  </label>
+                  <button onclick="showAddModal()" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>添加内容
+                  </button>
+                </div>
+              </div>
+              <div class="flex flex-col md:flex-row gap-4 mt-4">
+                <div class="flex-1 relative">
+                  <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                  <input type="text" id="searchInput" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="搜索标题、内容...">
+                </div>
+                <select id="categoryFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+                  <option value="">全部分类</option>
+                  <option value="changguwu">瑶族长鼓舞</option>
+                  <option value="zhijin">瑶族织锦技艺</option>
+                  <option value="panwang">瑶族盘王节</option>
+                  <option value="minge">瑶族民歌</option>
+                  <option value="yaoyiyao">瑶医药</option>
+                </select>
+                <select id="typeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+                  <option value="">全部类型</option>
+                  <option value="artwork">文化拾珠</option>
+                  <option value="technique">古法技艺</option>
+                  <option value="story">传承故事</option>
+                  <option value="festival">节庆活动</option>
+                  <option value="news">动态资讯</option>
+                </select>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">图片</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">标题</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">分类</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">日期</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="contentTableBody" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+            <div class="p-4 border-t flex items-center justify-between">
+              <p id="paginationInfo" class="text-sm text-gray-500">显示 1-10 条，共 0 条</p>
+              <div id="pagination" class="flex gap-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分类管理页面 -->
+        <div id="categoryPage" class="page-content hidden">
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">非遗分类</h3>
+            <div id="categoryList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          </div>
+        </div>
+
+        <!-- 图片管理页面 -->
+        <div id="imagePage" class="page-content hidden">
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-gray-800">图片管理</h3>
+              <button class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700">
+                <i class="fas fa-upload mr-2"></i>上传图片
+              </button>
+            </div>
+            <div id="imageGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+          </div>
+        </div>
+
+        <!-- 数据统计页面 -->
+        <div id="statsPage" class="page-content hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">类型分布</h3>
+              <div id="typeStats" class="space-y-3"></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">分类分布</h3>
+              <div id="categoryStatsDetail" class="space-y-3"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 添加/编辑内容模态框 -->
+  <div id="contentModal" class="modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto fade-in">
+      <div class="p-6 border-b flex items-center justify-between">
+        <h3 id="modalTitle" class="text-lg font-bold text-gray-800">添加内容</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <form id="contentForm" class="p-6 space-y-4">
+        <input type="hidden" id="contentId">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">标题 <span class="text-red-500">*</span></label>
+            <input type="text" id="formTitle" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="请输入标题" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">分类 <span class="text-red-500">*</span></label>
+            <select id="formCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" required>
+              <option value="">请选择分类</option>
+              <option value="changguwu">瑶族长鼓舞</option>
+              <option value="zhijin">瑶族织锦技艺</option>
+              <option value="panwang">瑶族盘王节</option>
+              <option value="minge">瑶族民歌</option>
+              <option value="yaoyiyao">瑶医药</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">类型 <span class="text-red-500">*</span></label>
+            <select id="formType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" required>
+              <option value="">请选择类型</option>
+              <option value="artwork">文化拾珠</option>
+              <option value="technique">古法技艺</option>
+              <option value="story">传承故事</option>
+              <option value="festival">节庆活动</option>
+              <option value="news">动态资讯</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">日期</label>
+            <input type="date" id="formDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">作者</label>
+            <input type="text" id="formAuthor" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="请输入作者">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">来源</label>
+            <input type="text" id="formSource" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="请输入来源">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">图片</label>
+          <div class="flex gap-4 items-start">
+            <div class="flex-1">
+              <input type="text" id="formImage" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="请输入图片URL">
+              <p class="text-xs text-gray-500 mt-1">支持本地路径如 /images/xxx.jpg 或网络URL</p>
+            </div>
+            <div id="imagePreview" class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+              <i class="fas fa-image text-gray-400 text-2xl"></i>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">内容 <span class="text-red-500">*</span></label>
+          <textarea id="formContent" rows="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="请输入内容详情" required></textarea>
+        </div>
+        <div class="flex justify-end gap-3 pt-4 border-t">
+          <button type="button" onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">取消</button>
+          <button type="submit" class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+            <i class="fas fa-save mr-2"></i>保存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 删除确认模态框 -->
+  <div id="deleteModal" class="modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md fade-in">
+      <div class="p-6 text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">确认删除</h3>
+        <p class="text-gray-500 mb-6">确定要删除这条内容吗？此操作无法撤销。</p>
+        <div class="flex justify-center gap-3">
+          <button onclick="closeDeleteModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">取消</button>
+          <button id="confirmDeleteBtn" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            <i class="fas fa-trash mr-2"></i>删除
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast提示 -->
+  <div id="toast" class="toast hidden bg-white rounded-lg shadow-lg p-4 flex items-center gap-3">
+    <i id="toastIcon" class="fas fa-check-circle text-green-500"></i>
+    <span id="toastMessage" class="text-gray-700">操作成功</span>
+  </div>
+
+  <script>
+    // 初始数据
+    const initialData = [
+      { id: 'cgw-001', title: '《盘古长鼓舞》经典演绎', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '盘古长鼓舞流传于江华蔚竹口一带，是祭祀盘王"还愿"仪式中的经典舞蹈。舞蹈分"请愿"和"围愿"两段，舞步舒缓持重，有锣鼓伴奏，展现了瑶族人民对祖先的崇敬之情。', image: '/images/real/changguwu/changguwu-01.jpg', date: '2024-10-16', author: '李根普', source: '' },
+      { id: 'cgw-002', title: '《芦笙长鼓舞》山野风情', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '芦笙长鼓舞流传于江华高滩一带，由七人表演，一人手执朝笏领舞，二人吹芦笙，二人打长鼓，一人打锣。全舞分"迎圣"、"起拜"、"行路"、"梅花"、"欢鼓"五段，动作粗犷，场面热烈。', image: '/images/real/changguwu/changguwu-02.jpg', date: '2024-08-15', author: '赵雄', source: '' },
+      { id: 'cgw-003', title: '《羊角短鼓舞》平地瑶特色', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '羊角短鼓舞流传于江华平地瑶地区，由七人表演，一人拿朝笏或牛角领头，两人拿羊角，四人执短鼓。舞者载歌载舞，唱着"野羊撬"之歌，互相穿插，气氛热烈。', image: '/images/real/changguwu/changguwu-03.jpg', date: '2024-06-06', author: '赵明华', source: '' },
+      { id: 'cgw-004', title: '《锣笙长鼓舞》集体狂欢', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '锣笙长鼓舞是江华岭东瑶族调庙时跳的集体舞蹈。二人打长鼓，二人吹芦笙，一人打锣，其余各执小旗、纸币、铜铃等道具，六位姑娘打着花伞，边唱边舞，场面壮观。', image: '/images/real/changguwu/changguwu-04.jpg', date: '2024-03-03', author: '李根普', source: '' },
+      { id: 'cgw-005', title: '《桌上长鼓舞》绝技表演', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '桌上长鼓舞流行于江华大圩镇等地，舞者在方桌上表演长鼓舞，动作惊险优美，需要极高的平衡能力和舞技，是瑶族长鼓舞中的绝技表演形式。', image: '/images/real/changguwu/changguwu-05.jpg', date: '2024-11-20', author: '李根普', source: '' },
+      { id: 'cgw-006', title: '长鼓舞《造屋》组舞', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '《造屋》组舞是长鼓舞中最具特色的表演之一，包含二十多个专门表现建造木屋的动作，从寻屋地、找树、砍树、锯树，到上梁、盖屋，真实反映了瑶族频繁迁徙的生活历史。', image: '/images/real/changguwu/changguwu-06.jpg', date: '2024-09-10', author: '赵雄', source: '' },
+      { id: 'cgw-007', title: '《金鸡展翅》模仿舞', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '《金鸡展翅》是长鼓舞中模仿禽兽动作的经典舞姿，舞者模仿金鸡展翅高飞的姿态，动作矫健优美，展现了瑶族人民对自然界的细致观察和热爱。', image: '/images/real/changguwu/changguwu-01.jpg', date: '2024-07-22', author: '赵明华', source: '' },
+      { id: 'cgw-008', title: '《山羊反臂》技巧展示', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '《山羊反臂》是长鼓舞中难度较高的技巧动作，舞者模仿山羊反臂跳跃的姿态，动作灵活敏捷，需要极强的身体协调性和舞蹈功底。', image: '/images/real/changguwu/changguwu-02.jpg', date: '2024-05-18', author: '李根普', source: '' },
+      { id: 'cgw-009', title: '《古树盘根》造型舞', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '《古树盘根》是长鼓舞中模仿植物的经典造型，舞者身体盘曲如古树盘根，姿态优美而富有力量感，象征着瑶族文化的深厚根基。', image: '/images/real/changguwu/changguwu-03.jpg', date: '2024-04-12', author: '赵雄', source: '' },
+      { id: 'cgw-010', title: '《扫地梅花》群舞', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '《扫地梅花》是长鼓舞中优美的群舞形式，舞者们手持长鼓，动作如梅花扫地般轻盈飘逸，队形变换丰富，视觉效果极佳。', image: '/images/real/changguwu/changguwu-04.jpg', date: '2024-02-28', author: '赵明华', source: '' },
+      { id: 'cgw-011', title: '长鼓舞《庆丰收》', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '《庆丰收》是长鼓舞中表现喜庆场合的经典节目，舞者们敲打着欢快的鼓点，动作热烈奔放，表达瑶族人民丰收后的喜悦心情。', image: '/images/real/changguwu/changguwu-05.jpg', date: '2024-10-01', author: '李根普', source: '' },
+      { id: 'cgw-012', title: '《雪花压顶》高难度动作', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'artwork', typeName: '文化拾珠', content: '《雪花压顶》是长鼓舞中极具挑战性的动作，舞者需要在蹲姿状态下完成复杂的鼓点敲击，动作如雪花压顶般轻盈而有力。', image: '/images/real/changguwu/changguwu-06.jpg', date: '2024-12-20', author: '赵雄', source: '' },
+      { id: 'cgw-013', title: '江华举行千人长鼓舞展演献礼国庆', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '2024年国庆前夕，江华瑶族自治县举行震撼人心的千人长鼓舞展演活动。各族群众精神抖擞，鼓舞前行，队伍中既有长鼓舞协会成员，又有朝气蓬勃的小学生，最长者年过七旬，最小者年仅十岁。', image: '/images/real/changguwu/changguwu-01.jpg', date: '2024-09-28', author: '', source: '江华新闻网' },
+      { id: 'cgw-014', title: '长鼓舞亮相央视重阳特别节目', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '2024年10月29日，江华瑶族长鼓舞亮相中央广播电视总台重阳特别节目《霞光满天山河颂》。老中青三代舞者同台演绎，长鼓舞与街舞创新交融，展现出刚柔并济的韵律。', image: '/images/real/changguwu/changguwu-02.jpg', date: '2024-10-29', author: '', source: '央视网' },
+      { id: 'cgw-015', title: '长鼓舞传承人赵雄获国家级认定', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '江华瑶族长鼓舞传承人赵雄老师近日获评国家级非物质文化遗产代表性传承人。赵雄老师从瑶山少年成长为长鼓舞守脉者，与时光共舞，为长鼓舞的传承发展做出了突出贡献。', image: '/images/real/changguwu/changguwu-03.jpg', date: '2024-11-15', author: '', source: '湖南日报' },
+      { id: 'cgw-016', title: '沱江镇第一小学长鼓操进校园18年', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '江华沱江镇第一小学将国家级非物质文化遗产"瑶族长鼓舞"引入校园已18年，并将其改编成长鼓操，融入大课间活动，让"人人会唱瑶歌、个个能跳瑶舞"成为校园新风尚。', image: '/images/real/changguwu/changguwu-04.jpg', date: '2024-09-01', author: '', source: '永州新闻网' },
+      { id: 'cgw-017', title: '江华发放8000余个长鼓推动非遗传承', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '为推动长鼓舞传承，江华县向10所中小学校发放长鼓8000余个，将长鼓舞纳入学校课程。如今全县长鼓舞爱好者已近万人，这项传统民俗正逐渐成为各年龄段群众喜爱的文化时尚。', image: '/images/real/changguwu/changguwu-05.jpg', date: '2024-08-20', author: '', source: '江华县政府网' },
+      { id: 'cgw-018', title: '长鼓舞亮相盘王节开幕式', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '2024年瑶族盘王节开幕式上，来自江华各地的长鼓舞表演队献上精彩演出。激昂的鼓点、粗犷的舞姿，展现了瑶族文化的独特魅力，赢得现场观众阵阵掌声。', image: '/images/real/changguwu/changguwu-06.jpg', date: '2024-10-16', author: '', source: '江华文旅局' },
+      { id: 'cgw-019', title: '"长鼓王"李根普的鼓点人生', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '76岁的李根普老人被誉为"长鼓王"，9岁学打鼓，学了四个师傅才出师。他掌握长鼓舞七十二套程式，是江华长鼓舞活态传承的宝贵财富。', image: '/images/real/changguwu/changguwu-01.jpg', date: '2024-07-10', author: '', source: '湖南日报' },
+      { id: 'cgw-020', title: '长鼓舞走进湖南旅发大会', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '江华瑶族长鼓舞作为永州文化旅游的重要名片，精彩亮相湖南省旅游发展大会。独特的民族风情和精湛的表演技艺，吸引了众多游客和媒体记者的关注。', image: '/images/real/changguwu/changguwu-02.jpg', date: '2024-09-15', author: '', source: '湖南省文旅厅' },
+      { id: 'cgw-021', title: '长鼓舞与街舞跨界融合创新', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '江华青年舞者尝试将传统长鼓舞与现代街舞融合，创作出《锦绣瑶都》等创新作品。古老鼓点与青春节拍碰撞出时代火花，彰显瑶族风情鲜活的生命力。', image: '/images/real/changguwu/changguwu-03.jpg', date: '2024-11-08', author: '', source: '永州新闻网' },
+      { id: 'cgw-022', title: '桐冲口村成立长鼓舞传承基地', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '千年瑶寨桐冲口村成立长鼓舞传承基地，近百人的千年勉瑶古寨醉喜多艺术团定期展演长鼓舞，成为永州市非遗示范村，带动当地文化旅游发展。', image: '/images/real/changguwu/changguwu-04.jpg', date: '2024-06-18', author: '', source: '大公网' },
+      { id: 'cgw-023', title: '长鼓舞助力江华70周年县庆', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '江华瑶族自治县成立70周年庆祝活动中，长鼓舞作为重要表演节目精彩呈现。各族群众以最具民族特色的方式，展示70年来民族团结进步的丰硕成果。', image: '/images/real/changguwu/changguwu-05.jpg', date: '2025-12-02', author: '', source: '湖南日报' },
+      { id: 'cgw-024', title: '长鼓舞非遗展演活动年超150场', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'news', typeName: '动态资讯', content: '江华依托瑶医药节、盘王节等节庆，每年开展各类长鼓舞展演活动超过150场。长鼓舞已成为江华文化旅游的标志性项目，吸引众多游客前来观赏体验。', image: '/images/real/changguwu/changguwu-06.jpg', date: '2024-12-01', author: '', source: '江华文旅局' },
+      { id: 'cgw-025', title: '长鼓制作工艺详解', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'technique', typeName: '古法技艺', content: '长鼓以空桐木为身，两端蒙牛羊皮并饰龙凤纹。制作一面上好的长鼓需要经过选木、挖空、蒙皮、装饰等十余道工序，每道工序都蕴含着匠人的智慧和经验。', image: '/images/real/changguwu/changguwu-01.jpg', date: '', author: '李根普', source: '' },
+      { id: 'cgw-026', title: '长鼓舞七十二套程式', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'technique', typeName: '古法技艺', content: '传统长鼓舞共有七十二套程式，每套分"起堂"、"移堂"等环节。常用的有拜、承、大、小、打、置、架、斢等十五套，其他程式因传承原因逐渐失传。', image: '/images/real/changguwu/changguwu-02.jpg', date: '', author: '赵雄', source: '' },
+      { id: 'cgw-027', title: '文打法与武打法区别', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'technique', typeName: '古法技艺', content: '长鼓舞击鼓有文打武打之分。文打动作柔和缓慢，武打粗犷豪放。过山瑶以武打为多，土瑶以文打为多。不同打法展现不同的民族风情和地域特色。', image: '/images/real/changguwu/changguwu-03.jpg', date: '', author: '赵明华', source: '' },
+      { id: 'cgw-028', title: '长鼓舞基本步法教学', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'technique', typeName: '古法技艺', content: '长鼓舞基本步法包括：小八字步站立、膝盖微屈、身体前倾、双手握鼓。基本动作有：拜鼓、承鼓、大鼓、小鼓、打鼓、置鼓、架鼓、斢鼓等八种。', image: '/images/real/changguwu/changguwu-04.jpg', date: '', author: '李根普', source: '' },
+      { id: 'cgw-029', title: '长鼓舞道具制作技艺', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'technique', typeName: '古法技艺', content: '长鼓舞道具包括长鼓、芦笙、铜锣、花伞等。长鼓制作最为讲究，需选用桐木，挖空后两端蒙皮，皮面绘制龙凤图案，鼓身彩绘装饰，工艺精湛。', image: '/images/real/changguwu/changguwu-05.jpg', date: '', author: '赵雄', source: '' },
+      { id: 'cgw-030', title: '长鼓舞音乐节奏特点', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'technique', typeName: '古法技艺', content: '长鼓舞音乐以鼓点为主，配合芦笙、铜锣等乐器。鼓点节奏丰富多变，有慢板、快板、散板之分，不同程式对应不同的鼓点节奏，形成独特的音乐体系。', image: '/images/real/changguwu/changguwu-06.jpg', date: '', author: '赵明华', source: '' },
+      { id: 'cgw-031', title: '赵雄：与长鼓舞共舞五十载', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'story', typeName: '传承故事', content: '赵雄，国家级非物质文化遗产代表性传承人，从瑶山少年成长为长鼓舞守脉者，与时光共舞五十余载。他不仅精通七十二套程式，更致力于长鼓舞的传承教学。', image: '/images/real/changguwu/changguwu-01.jpg', date: '', author: '', source: '' },
+      { id: 'cgw-032', title: '李根普：长鼓王的鼓点人生', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'story', typeName: '传承故事', content: '76岁的李根普被誉为"长鼓王"，9岁学打鼓，学了四个师傅才出师。他掌握长鼓舞七十二套程式，是江华长鼓舞活态传承的宝贵财富，培养了数百名弟子。', image: '/images/real/changguwu/changguwu-02.jpg', date: '', author: '', source: '' },
+      { id: 'cgw-033', title: '赵明华：长鼓舞进校园的推动者', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'story', typeName: '传承故事', content: '赵明华老师致力于长鼓舞进校园工作，将传统长鼓舞改编成长鼓操，让"人人会唱瑶歌、个个能跳瑶舞"成为校园新风尚，培养了大批长鼓舞爱好者。', image: '/images/real/changguwu/changguwu-03.jpg', date: '', author: '', source: '' },
+      { id: 'cgw-034', title: '桐冲口村的长鼓舞传承', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'story', typeName: '传承故事', content: '千年瑶寨桐冲口村是长鼓舞的重要传承地，村里成立了近百人的艺术团，定期展演长鼓舞。年轻一代在老一辈的传授下，继承了这一珍贵的民族文化遗产。', image: '/images/real/changguwu/changguwu-04.jpg', date: '', author: '', source: '' },
+      { id: 'cgw-035', title: '长鼓舞在江华中小学的普及', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'story', typeName: '传承故事', content: '江华县将长鼓舞纳入中小学课程，发放长鼓8000余个，全县长鼓舞爱好者已近万人。从校园到社区，长鼓舞正成为各年龄段群众喜爱的文化时尚。', image: '/images/real/changguwu/changguwu-05.jpg', date: '', author: '', source: '' },
+      { id: 'cgw-036', title: '2024年瑶族盘王节长鼓舞展演', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'festival', typeName: '节庆活动', content: '2024年瑶族盘王节开幕式上，来自江华各地的长鼓舞表演队献上精彩演出。激昂的鼓点、粗犷的舞姿，展现了瑶族文化的独特魅力。', image: '/images/real/changguwu/changguwu-06.jpg', date: '2024-10-16', author: '', source: '江华文旅局' },
+      { id: 'cgw-037', title: '千人长鼓舞献礼国庆', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'festival', typeName: '节庆活动', content: '2024年国庆前夕，江华举行震撼人心的千人长鼓舞展演。各族群众精神抖擞，鼓舞前行，队伍中既有年过七旬的老人，也有年仅十岁的孩童。', image: '/images/real/changguwu/changguwu-01.jpg', date: '2024-09-28', author: '', source: '江华新闻网' },
+      { id: 'cgw-038', title: '长鼓舞亮相央视重阳晚会', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'festival', typeName: '节庆活动', content: '2024年重阳节，江华长鼓舞亮相央视特别节目。老中青三代舞者同台，长鼓舞与街舞创新交融，展现刚柔并济的韵律，向全国观众展示瑶族文化魅力。', image: '/images/real/changguwu/changguwu-02.jpg', date: '2024-10-29', author: '', source: '央视网' },
+      { id: 'cgw-039', title: '江华70周年县庆长鼓舞表演', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'festival', typeName: '节庆活动', content: '江华瑶族自治县成立70周年庆祝活动中，长鼓舞作为重要节目精彩呈现。各族群众以最具民族特色的方式，展示70年来民族团结进步的丰硕成果。', image: '/images/real/changguwu/changguwu-03.jpg', date: '2025-12-02', author: '', source: '湖南日报' },
+      { id: 'cgw-040', title: '长鼓舞助力湖南旅发大会', category: 'changguwu', categoryName: '瑶族长鼓舞', type: 'festival', typeName: '节庆活动', content: '江华长鼓舞精彩亮相湖南省旅游发展大会，独特的民族风情和精湛的表演技艺，成为永州文化旅游的重要名片，吸引众多游客关注。', image: '/images/real/changguwu/changguwu-04.jpg', date: '2024-09-15', author: '', source: '湖南省文旅厅' },
+      { id: 'zj-001', title: '八宝被：瑶族织锦巅峰之作', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '八宝被是瑶族织锦技艺的巅峰之作，被面绣有"十二生肖"、"万字不断头"等精美图案，工艺精湛，色彩艳丽，是瑶族婚嫁必备之物，也是珍贵的民族艺术品。', image: '/images/real/zhijin/zhijin-01.jpg', date: '2024-10-16', author: '黄翠兰', source: '' },
+      { id: 'zj-002', title: '《盘王印》织锦图案', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '《盘王印》是瑶族织锦中最具代表性的图案之一，以盘王印章为原型，采用挑花工艺织就，图案庄重典雅，象征着瑶族人民对祖先的崇敬。', image: '/images/real/zhijin/zhijin-02.jpg', date: '2024-08-15', author: '李华', source: '' },
+      { id: 'zj-003', title: '《万字花》吉祥图案', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '《万字花》是瑶族织锦中常见的吉祥图案，以"卍"字为基础变化出各种花卉造型，寓意万福万寿、吉祥如意，广泛应用于被面、服饰等织品。', image: '/images/real/zhijin/zhijin-03.jpg', date: '2024-06-06', author: '黄翠兰', source: '' },
+      { id: 'zj-004', title: '《菱形花》几何之美', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '《菱形花》是瑶族织锦中典型的几何图案，以菱形为基本单元，通过重复、对称、旋转等手法组合成复杂图案，展现瑶族人民独特的审美观念。', image: '/images/real/zhijin/zhijin-04.jpg', date: '2024-03-03', author: '李华', source: '' },
+      { id: 'zj-005', title: '《杜鹃花开》自然题材', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '《杜鹃花开》是瑶族织锦中表现自然题材的精品，以杜鹃花为原型，采用挑花工艺织就，花朵栩栩如生，色彩鲜艳，展现了瑶族人民对自然的热爱。', image: '/images/real/zhijin/zhijin-05.jpg', date: '2024-11-20', author: '黄翠兰', source: '' },
+      { id: 'zj-006', title: '《莲花出水》清雅图案', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '《莲花出水》是瑶族织锦中清雅脱俗的图案，以莲花为题材，寓意纯洁高雅。图案线条流畅，色彩搭配和谐，是瑶族织锦中的精品之作。', image: '/images/real/zhijin/zhijin-06.jpg', date: '2024-09-10', author: '李华', source: '' },
+      { id: 'zj-007', title: '《瑶岭挑花》传统技法', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '《瑶岭挑花》是瑶族织锦的传统技法之一，以经纬线交错挑织形成图案，工艺精细，图案清晰。这种技法需要极高的耐心和技巧，是瑶族织锦的核心技艺。', image: '/images/real/zhijin/zhijin-01.jpg', date: '2024-07-22', author: '黄翠兰', source: '' },
+      { id: 'zj-008', title: '《八宝被面》婚嫁精品', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '八宝被面是瑶族婚嫁的必备之物，被面绣有八种吉祥图案，工艺精湛，寓意美好。每一床八宝被都是织娘心血结晶，是珍贵的民族艺术品。', image: '/images/real/zhijin/zhijin-02.jpg', date: '2024-05-18', author: '李华', source: '' },
+      { id: 'zj-009', title: '《彩锦腰带》服饰配件', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '彩锦腰带是瑶族服饰的重要配件，以彩色棉线织就，图案精美，色彩艳丽。腰带不仅是装饰品，更是身份和地位的象征，不同图案代表不同支系。', image: '/images/real/zhijin/zhijin-03.jpg', date: '2024-04-12', author: '黄翠兰', source: '' },
+      { id: 'zj-010', title: '《绣花头巾》精美饰品', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '绣花头巾是瑶族女性的精美饰品，以彩色丝线绣制各种花卉图案，工艺精细，色彩鲜艳。头巾的图案和颜色因支系和年龄而异，是瑶族服饰文化的重要组成部分。', image: '/images/real/zhijin/zhijin-04.jpg', date: '2024-02-28', author: '李华', source: '' },
+      { id: 'zj-011', title: '《织锦背篓》实用艺术', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '织锦背篓是瑶族织锦与竹编工艺的结合，背篓表面覆盖织锦装饰，既实用又美观。这种独特的工艺品展现了瑶族人民的智慧和创造力。', image: '/images/real/zhijin/zhijin-05.jpg', date: '2024-10-01', author: '黄翠兰', source: '' },
+      { id: 'zj-012', title: '《挑花围裙》日常精品', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'artwork', typeName: '文化拾珠', content: '挑花围裙是瑶族女性日常穿着的精品，以挑花工艺织就各种图案，既实用又美观。围裙的图案多取材于自然，展现了瑶族人民对生活的热爱。', image: '/images/real/zhijin/zhijin-06.jpg', date: '2024-12-20', author: '李华', source: '' },
+      { id: 'zj-013', title: '瑶族织锦技艺入选国家级非遗', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华瑶族织锦技艺成功入选国家级非物质文化遗产名录，这一传统技艺以其独特的挑花工艺和精美的图案设计，成为中华民族文化宝库中的瑰宝。', image: '/images/real/zhijin/zhijin-01.jpg', date: '2024-09-28', author: '', source: '江华新闻网' },
+      { id: 'zj-014', title: '织锦技艺传承人黄翠兰获省级认定', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华瑶族织锦技艺传承人黄翠兰老师获评省级非物质文化遗产代表性传承人。她从事织锦技艺四十余年，培养了大批织锦艺人，为技艺传承做出突出贡献。', image: '/images/real/zhijin/zhijin-02.jpg', date: '2024-10-29', author: '', source: '湖南日报' },
+      { id: 'zj-015', title: '织锦产品远销海内外', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华瑶族织锦产品以其精湛的工艺和独特的民族风格，远销海内外市场。八宝被、织锦围巾、手提包等产品深受消费者喜爱，成为江华文化旅游的重要商品。', image: '/images/real/zhijin/zhijin-03.jpg', date: '2024-11-15', author: '', source: '永州新闻网' },
+      { id: 'zj-016', title: '织锦技艺走进校园课堂', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华县将瑶族织锦技艺引入中小学课堂，让学生们了解和学习这一传统技艺。通过实践教学，培养年轻一代对民族文化的认同感和传承意识。', image: '/images/real/zhijin/zhijin-04.jpg', date: '2024-09-01', author: '', source: '江华县政府网' },
+      { id: 'zj-017', title: '织锦合作社带动村民致富', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华县成立多家瑶族织锦合作社，组织农村妇女学习织锦技艺，生产织锦产品。合作社不仅传承了传统技艺，还带动了村民增收致富。', image: '/images/real/zhijin/zhijin-05.jpg', date: '2024-08-20', author: '', source: '湖南日报' },
+      { id: 'zj-018', title: '织锦作品获国际工艺大奖', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华瑶族织锦作品在国际工艺美术大赛中获奖，精美的图案和精湛的工艺获得评委高度评价。这一荣誉提升了江华织锦的国际知名度。', image: '/images/real/zhijin/zhijin-06.jpg', date: '2024-10-16', author: '', source: '江华文旅局' },
+      { id: 'zj-019', title: '数字化保护织锦技艺', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华县启动瑶族织锦技艺数字化保护项目，对织锦图案、工艺技法进行数字化记录和保存。这一项目为织锦技艺的传承和研究提供了重要资料。', image: '/images/real/zhijin/zhijin-01.jpg', date: '2024-07-10', author: '', source: '永州新闻网' },
+      { id: 'zj-020', title: '织锦文创产品受热捧', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华推出系列瑶族织锦文创产品，包括织锦书签、手机壳、笔记本等，将传统图案与现代设计相结合，深受年轻消费者喜爱。', image: '/images/real/zhijin/zhijin-02.jpg', date: '2024-09-15', author: '', source: '湖南省文旅厅' },
+      { id: 'zj-021', title: '织锦技艺培训班开班', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华县举办瑶族织锦技艺培训班，邀请传承人授课，传授挑花技艺。培训班吸引了大批织锦爱好者参加，为技艺传承注入新活力。', image: '/images/real/zhijin/zhijin-03.jpg', date: '2024-11-08', author: '', source: '江华新闻网' },
+      { id: 'zj-022', title: '织锦博物馆建成开放', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华瑶族织锦博物馆建成开放，展示织锦历史、工艺技法、精品作品等。博物馆成为了解瑶族织锦文化的重要窗口，吸引众多游客参观。', image: '/images/real/zhijin/zhijin-04.jpg', date: '2024-06-18', author: '', source: '大公网' },
+      { id: 'zj-023', title: '织锦技艺助力乡村振兴', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华县将瑶族织锦技艺与乡村振兴相结合，发展织锦产业，带动农村妇女就业。织锦成为当地群众增收致富的重要途径。', image: '/images/real/zhijin/zhijin-05.jpg', date: '2025-12-02', author: '', source: '湖南日报' },
+      { id: 'zj-024', title: '织锦精品展在省会举办', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'news', typeName: '动态资讯', content: '江华瑶族织锦精品展在长沙举办，展出百余件精美织锦作品。展览向公众展示了瑶族织锦的独特魅力，提升了江华织锦的知名度。', image: '/images/real/zhijin/zhijin-06.jpg', date: '2024-12-01', author: '', source: '江华文旅局' },
+      { id: 'zj-025', title: '挑花工艺详细步骤', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'technique', typeName: '古法技艺', content: '挑花工艺是瑶族织锦的核心技艺，包括设计图案、准备线材、上机织作、挑花成型等步骤。每一步都需要精湛的技艺和丰富的经验，才能织出精美的图案。', image: '/images/real/zhijin/zhijin-01.jpg', date: '', author: '黄翠兰', source: '' },
+      { id: 'zj-026', title: '织锦图案设计原理', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'technique', typeName: '古法技艺', content: '瑶族织锦图案设计遵循对称、重复、渐变等美学原则，图案多取材于自然和日常生活。设计时需要考虑图案寓意、色彩搭配、织作难度等因素。', image: '/images/real/zhijin/zhijin-02.jpg', date: '', author: '李华', source: '' },
+      { id: 'zj-027', title: '传统织机使用方法', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'technique', typeName: '古法技艺', content: '瑶族传统织机为腰机，由机身、经轴、纬轴、综杆、筘等部件组成。使用时将经轴固定于腰部，通过综杆控制经线升降，用筘打紧纬线，织出图案。', image: '/images/real/zhijin/zhijin-03.jpg', date: '', author: '黄翠兰', source: '' },
+      { id: 'zj-028', title: '线材染色技艺', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'technique', typeName: '古法技艺', content: '瑶族织锦线材采用植物染料染色，如蓝靛、茜草、栀子等。染色工艺包括煮染、浸泡、晾晒等步骤，染出的颜色自然持久，富有民族特色。', image: '/images/real/zhijin/zhijin-04.jpg', date: '', author: '李华', source: '' },
+      { id: 'zj-029', title: '八宝被制作工艺', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'technique', typeName: '古法技艺', content: '八宝被制作需要经过设计、挑花、织作、缝合等多道工序。被面绣有八种吉祥图案，每道工序都需要精湛的技艺，制作一床八宝被往往需要数月时间。', image: '/images/real/zhijin/zhijin-05.jpg', date: '', author: '黄翠兰', source: '' },
+      { id: 'zj-030', title: '织锦图案寓意解读', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'technique', typeName: '古法技艺', content: '瑶族织锦图案蕴含丰富的文化寓意，如盘王印象征祖先崇拜，万字花寓意万福万寿，莲花代表纯洁高雅。了解图案寓意有助于理解瑶族文化内涵。', image: '/images/real/zhijin/zhijin-06.jpg', date: '', author: '李华', source: '' },
+      { id: 'zj-031', title: '黄翠兰：织锦技艺的守护者', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'story', typeName: '传承故事', content: '黄翠兰，省级非物质文化遗产代表性传承人，从事瑶族织锦技艺四十余年。她精通挑花工艺，培养了大批织锦艺人，是织锦技艺的忠实守护者。', image: '/images/real/zhijin/zhijin-01.jpg', date: '', author: '', source: '' },
+      { id: 'zj-032', title: '李华：创新传统织锦设计', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'story', typeName: '传承故事', content: '李华是江华年轻一代织锦艺人，她在继承传统技艺的基础上，创新织锦图案设计，将现代元素融入传统工艺，让古老织锦焕发新的生机。', image: '/images/real/zhijin/zhijin-02.jpg', date: '', author: '', source: '' },
+      { id: 'zj-033', title: '织锦合作社的故事', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'story', typeName: '传承故事', content: '江华县织锦合作社由一群热爱织锦的农村妇女组成，她们在传承人的指导下学习技艺，生产织锦产品，既传承了文化，又增加了收入。', image: '/images/real/zhijin/zhijin-03.jpg', date: '', author: '', source: '' },
+      { id: 'zj-034', title: '从母亲到女儿：织锦技艺传承', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'story', typeName: '传承故事', content: '在江华瑶族家庭，织锦技艺往往由母亲传给女儿，代代相传。这种家庭传承方式保证了技艺的延续，也让织锦成为母女情感交流的纽带。', image: '/images/real/zhijin/zhijin-04.jpg', date: '', author: '', source: '' },
+      { id: 'zj-035', title: '织锦进校园：培养新一代传承人', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'story', typeName: '传承故事', content: '江华县将织锦技艺引入校园，让学生们了解和学习这一传统技艺。许多学生在学习过程中爱上了织锦，成为新一代传承人。', image: '/images/real/zhijin/zhijin-05.jpg', date: '', author: '', source: '' },
+      { id: 'zj-036', title: '盘王节织锦技艺展演', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'festival', typeName: '节庆活动', content: '2024年瑶族盘王节期间，江华举办织锦技艺展演活动，传承人现场展示挑花技艺，让观众近距离感受织锦的魅力。', image: '/images/real/zhijin/zhijin-06.jpg', date: '2024-10-16', author: '', source: '江华文旅局' },
+      { id: 'zj-037', title: '织锦精品展献礼国庆', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'festival', typeName: '节庆活动', content: '国庆期间，江华举办瑶族织锦精品展，展出百余件精美织锦作品，向祖国献礼。展览吸引了众多游客和市民参观。', image: '/images/real/zhijin/zhijin-01.jpg', date: '2024-09-28', author: '', source: '江华新闻网' },
+      { id: 'zj-038', title: '织锦技艺大赛', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'festival', typeName: '节庆活动', content: '江华举办瑶族织锦技艺大赛，来自各地的织锦艺人同台竞技，展示精湛技艺。大赛促进了技艺交流，提升了织锦水平。', image: '/images/real/zhijin/zhijin-02.jpg', date: '2024-10-29', author: '', source: '湖南日报' },
+      { id: 'zj-039', title: '织锦文化节', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'festival', typeName: '节庆活动', content: '江华瑶族织锦文化节盛大开幕，活动包括技艺展示、精品展览、文化讲座等，全方位展示织锦文化的独特魅力。', image: '/images/real/zhijin/zhijin-03.jpg', date: '2025-12-02', author: '', source: '永州新闻网' },
+      { id: 'zj-040', title: '织锦文创产品发布会', category: 'zhijin', categoryName: '瑶族织锦技艺', type: 'festival', typeName: '节庆活动', content: '江华举办瑶族织锦文创产品发布会，推出系列创新产品。新产品将传统图案与现代设计相结合，受到市场欢迎。', image: '/images/real/zhijin/zhijin-04.jpg', date: '2024-09-15', author: '', source: '湖南省文旅厅' }
+    ];
+
+    // 全局变量
+    let allContent = [];
+    let currentPage = 1;
+    let itemsPerPage = 10;
+    let deleteId = null;
+
+    // 分类和类型映射
+    const categoryMap = {
+      changguwu: '瑶族长鼓舞',
+      zhijin: '瑶族织锦技艺',
+      panwang: '瑶族盘王节',
+      minge: '瑶族民歌',
+      yaoyiyao: '瑶医药'
+    };
+
+    const typeMap = {
+      artwork: '文化拾珠',
+      technique: '古法技艺',
+      story: '传承故事',
+      festival: '节庆活动',
+      news: '动态资讯'
+    };
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initData();
+      bindEvents();
+      updateTime();
+      setInterval(updateTime, 1000);
+    });
+
+    // 初始化数据
+    function initData() {
+      const stored = localStorage.getItem('jianghua_ich_content');
+      if (stored) {
+        allContent = JSON.parse(stored);
+      } else {
+        allContent = [...initialData];
+        saveData();
+      }
+    }
+
+    // 保存数据
+    function saveData() {
+      localStorage.setItem('jianghua_ich_content', JSON.stringify(allContent));
+    }
+
+    // 导出JSON文件
+    function exportJSON() {
+      const data = {
+        content: allContent,
+        lastUpdated: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'content.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('JSON文件已导出，请将其上传到服务器/data/目录', 'success');
+    }
+
+    // 导入JSON文件
+    function importJSON(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.content && Array.isArray(data.content)) {
+            allContent = data.content;
+            saveData();
+            renderContentTable();
+            renderDashboard();
+            showToast('数据导入成功', 'success');
+          } else {
+            showToast('无效的JSON格式', 'error');
+          }
+        } catch (err) {
+          showToast('文件解析失败', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // 绑定事件
+    function bindEvents() {
+      // 登录表单
+      document.getElementById('loginForm').addEventListener('submit', handleLogin);
+      
+      // 退出登录
+      document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+      
+      // 侧边栏切换
+      document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+      
+      // 导航链接
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          const page = item.dataset.page;
+          switchPage(page);
+        });
+      });
+
+      // 搜索和筛选
+      document.getElementById('searchInput')?.addEventListener('input', debounce(renderContentTable, 300));
+      document.getElementById('categoryFilter')?.addEventListener('change', () => { currentPage = 1; renderContentTable(); });
+      document.getElementById('typeFilter')?.addEventListener('change', () => { currentPage = 1; renderContentTable(); });
+
+      // 表单提交
+      document.getElementById('contentForm').addEventListener('submit', handleFormSubmit);
+
+      // 图片预览
+      document.getElementById('formImage').addEventListener('input', updateImagePreview);
+
+      // 删除确认
+      document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+    }
+
+    // 登录处理
+    function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      if (username === 'admin' && password === '123456') {
+        document.getElementById('loginPage').classList.add('hidden');
+        document.getElementById('appPage').classList.remove('hidden');
+        document.getElementById('appPage').classList.add('flex');
+        switchPage('dashboard');
+        showToast('登录成功', 'success');
+      } else {
+        showToast('用户名或密码错误', 'error');
+      }
+    }
+
+    // 退出登录
+    function handleLogout() {
+      document.getElementById('appPage').classList.add('hidden');
+      document.getElementById('appPage').classList.remove('flex');
+      document.getElementById('loginPage').classList.remove('hidden');
+      showToast('已退出登录', 'info');
+    }
+
+    // 切换页面
+    function switchPage(page) {
+      // 更新导航状态
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('bg-primary-50', 'text-primary-700');
+        item.classList.add('text-gray-600');
+        if (item.dataset.page === page) {
+          item.classList.add('bg-primary-50', 'text-primary-700');
+          item.classList.remove('text-gray-600');
+        }
+      });
+
+      // 隐藏所有页面
+      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      
+      // 显示当前页面
+      const pageMap = {
+        dashboard: { el: 'dashboardPage', title: '仪表盘', init: renderDashboard },
+        content: { el: 'contentPage', title: '内容管理', init: renderContentTable },
+        category: { el: 'categoryPage', title: '分类管理', init: renderCategoryList },
+        image: { el: 'imagePage', title: '图片管理', init: renderImageGrid },
+        stats: { el: 'statsPage', title: '数据统计', init: renderStats }
+      };
+
+      const config = pageMap[page];
+      if (config) {
+        document.getElementById('pageTitle').textContent = config.title;
+        document.getElementById(config.el).classList.remove('hidden');
+        config.init();
+      }
+
+      // 移动端关闭侧边栏
+      if (window.innerWidth < 1024) {
+        document.getElementById('sidebar').classList.add('closed');
+      }
+    }
+
+    // 切换侧边栏
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('closed');
+    }
+
+    // 渲染仪表盘
+    function renderDashboard() {
+      const stats = {
+        total: allContent.length,
+        artwork: allContent.filter(i => i.type === 'artwork').length,
+        technique: allContent.filter(i => i.type === 'technique').length,
+        news: allContent.filter(i => i.type === 'news').length
+      };
+
+      document.getElementById('totalCount').textContent = stats.total;
+      document.getElementById('artworkCount').textContent = stats.artwork;
+      document.getElementById('techniqueCount').textContent = stats.technique;
+      document.getElementById('newsCount').textContent = stats.news;
+
+      // 分类统计
+      const categoryStats = {};
+      allContent.forEach(item => {
+        categoryStats[item.category] = (categoryStats[item.category] || 0) + 1;
+      });
+
+      const categoryStatsHtml = Object.entries(categoryStats).map(([cat, count]) => {
+        const percent = Math.round((count / stats.total) * 100);
+        return `
+          <div class="flex items-center gap-3">
+            <span class="w-24 text-sm text-gray-600">${categoryMap[cat]}</span>
+            <div class="flex-1 bg-gray-200 rounded-full h-2">
+              <div class="bg-primary-500 h-2 rounded-full" style="width: ${percent}%"></div>
+            </div>
+            <span class="text-sm text-gray-500 w-12 text-right">${count}条</span>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('categoryStats').innerHTML = categoryStatsHtml || '<p class="text-gray-500 text-center">暂无数据</p>';
+    }
+
+    // 渲染内容表格
+    function renderContentTable() {
+      const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+      const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+      const typeFilter = document.getElementById('typeFilter')?.value || '';
+
+      let filtered = allContent.filter(item => {
+        const matchSearch = !searchTerm || 
+          item.title.toLowerCase().includes(searchTerm) || 
+          item.content.toLowerCase().includes(searchTerm);
+        const matchCategory = !categoryFilter || item.category === categoryFilter;
+        const matchType = !typeFilter || item.type === typeFilter;
+        return matchSearch && matchCategory && matchType;
+      });
+
+      const totalItems = filtered.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageItems = filtered.slice(start, end);
+
+      const tbody = document.getElementById('contentTableBody');
+      tbody.innerHTML = pageItems.map(item => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 text-sm text-gray-500">${item.id}</td>
+          <td class="px-6 py-4">
+            <img src="${item.image}" alt="" class="w-16 h-12 object-cover rounded" onerror="this.src='/images/placeholder.jpg'">
+          </td>
+          <td class="px-6 py-4">
+            <p class="text-sm font-medium text-gray-800 line-clamp-2 max-w-xs">${item.title}</p>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600">${item.categoryName}</td>
+          <td class="px-6 py-4">
+            <span class="px-2 py-1 text-xs rounded-full ${getTypeBadgeClass(item.type)}">${item.typeName}</span>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-500">${item.date || '-'}</td>
+          <td class="px-6 py-4">
+            <div class="flex gap-2">
+              <button onclick="editContent('${item.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded" title="编辑">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button onclick="deleteContent('${item.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded" title="删除">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">暂无数据</td></tr>';
+
+      // 分页信息
+      document.getElementById('paginationInfo').textContent = 
+        totalItems > 0 ? `显示 ${start + 1}-${Math.min(end, totalItems)} 条，共 ${totalItems} 条` : '暂无数据';
+
+      // 分页按钮
+      let paginationHtml = '';
+      if (totalPages > 1) {
+        paginationHtml += `
+          <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} 
+            class="px-3 py-1 border rounded ${currentPage === 1 ? 'text-gray-400' : 'hover:bg-gray-50'}">上一页</button>
+        `;
+        for (let i = 1; i <= totalPages; i++) {
+          paginationHtml += `
+            <button onclick="goToPage(${i})" 
+              class="px-3 py-1 border rounded ${i === currentPage ? 'bg-primary-600 text-white' : 'hover:bg-gray-50'}">${i}</button>
+          `;
+        }
+        paginationHtml += `
+          <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} 
+            class="px-3 py-1 border rounded ${currentPage === totalPages ? 'text-gray-400' : 'hover:bg-gray-50'}">下一页</button>
+        `;
+      }
+      document.getElementById('pagination').innerHTML = paginationHtml;
+    }
+
+    // 获取类型徽章样式
+    function getTypeBadgeClass(type) {
+      const classes = {
+        artwork: 'bg-purple-100 text-purple-700',
+        technique: 'bg-green-100 text-green-700',
+        story: 'bg-blue-100 text-blue-700',
+        festival: 'bg-yellow-100 text-yellow-700',
+        news: 'bg-orange-100 text-orange-700'
+      };
+      return classes[type] || 'bg-gray-100 text-gray-700';
+    }
+
+    // 跳转页面
+    function goToPage(page) {
+      currentPage = page;
+      renderContentTable();
+    }
+
+    // 显示添加模态框
+    function showAddModal() {
+      document.getElementById('modalTitle').textContent = '添加内容';
+      document.getElementById('contentForm').reset();
+      document.getElementById('contentId').value = '';
+      updateImagePreview();
+      document.getElementById('contentModal').classList.add('active');
+    }
+
+    // 编辑内容
+    function editContent(id) {
+      const item = allContent.find(i => i.id === id);
+      if (!item) return;
+
+      document.getElementById('modalTitle').textContent = '编辑内容';
+      document.getElementById('contentId').value = item.id;
+      document.getElementById('formTitle').value = item.title;
+      document.getElementById('formCategory').value = item.category;
+      document.getElementById('formType').value = item.type;
+      document.getElementById('formDate').value = item.date;
+      document.getElementById('formAuthor').value = item.author || '';
+      document.getElementById('formSource').value = item.source || '';
+      document.getElementById('formImage').value = item.image;
+      document.getElementById('formContent').value = item.content;
+      
+      updateImagePreview();
+      document.getElementById('contentModal').classList.add('active');
+    }
+
+    // 关闭模态框
+    function closeModal() {
+      document.getElementById('contentModal').classList.remove('active');
+    }
+
+    // 更新图片预览
+    function updateImagePreview() {
+      const url = document.getElementById('formImage').value;
+      const preview = document.getElementById('imagePreview');
+      if (url) {
+        preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.outerHTML='<i class=\\'fas fa-image text-gray-400 text-2xl\\'></i>'">`;
+      } else {
+        preview.innerHTML = '<i class="fas fa-image text-gray-400 text-2xl"></i>';
+      }
+    }
+
+    // 表单提交
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      const id = document.getElementById('contentId').value;
+      const category = document.getElementById('formCategory').value;
+      const type = document.getElementById('formType').value;
+      
+      const formData = {
+        id: id || generateId(category),
+        title: document.getElementById('formTitle').value,
+        category: category,
+        categoryName: categoryMap[category],
+        type: type,
+        typeName: typeMap[type],
+        content: document.getElementById('formContent').value,
+        image: document.getElementById('formImage').value || '/images/placeholder.jpg',
+        date: document.getElementById('formDate').value,
+        author: document.getElementById('formAuthor').value,
+        source: document.getElementById('formSource').value
+      };
+
+      if (id) {
+        // 编辑
+        const index = allContent.findIndex(i => i.id === id);
+        if (index !== -1) {
+          allContent[index] = formData;
+          showToast('内容已更新', 'success');
+        }
+      } else {
+        // 添加
+        allContent.unshift(formData);
+        showToast('内容已添加', 'success');
+      }
+
+      saveData();
+      closeModal();
+      renderContentTable();
+    }
+
+    // 生成ID
+    function generateId(category) {
+      const prefix = category.substring(0, 3);
+      const existing = allContent.filter(i => i.id.startsWith(prefix));
+      const maxNum = existing.reduce((max, i) => {
+        const num = parseInt(i.id.split('-')[1]) || 0;
+        return Math.max(max, num);
+      }, 0);
+      return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+    }
+
+    // 删除内容
+    function deleteContent(id) {
+      deleteId = id;
+      document.getElementById('deleteModal').classList.add('active');
+    }
+
+    // 关闭删除模态框
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.remove('active');
+      deleteId = null;
+    }
+
+    // 确认删除
+    function confirmDelete() {
+      if (deleteId) {
+        allContent = allContent.filter(i => i.id !== deleteId);
+        saveData();
+        showToast('内容已删除', 'success');
+        renderContentTable();
+      }
+      closeDeleteModal();
+    }
+
+    // 渲染分类列表
+    function renderCategoryList() {
+      const categoryStats = {};
+      allContent.forEach(item => {
+        if (!categoryStats[item.category]) {
+          categoryStats[item.category] = { name: item.categoryName, count: 0, types: {} };
+        }
+        categoryStats[item.category].count++;
+        categoryStats[item.category].types[item.type] = (categoryStats[item.category].types[item.type] || 0) + 1;
+      });
+
+      const html = Object.entries(categoryStats).map(([key, data]) => `
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-gray-800">${data.name}</h4>
+            <span class="bg-primary-100 text-primary-700 px-2 py-1 rounded text-sm">${data.count}条</span>
+          </div>
+          <div class="space-y-1">
+            ${Object.entries(data.types).map(([t, c]) => `
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">${typeMap[t]}</span>
+                <span class="text-gray-500">${c}条</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('') || '<p class="text-gray-500 col-span-3 text-center">暂无数据</p>';
+
+      document.getElementById('categoryList').innerHTML = html;
+    }
+
+    // 渲染图片网格
+    function renderImageGrid() {
+      const images = [...new Set(allContent.map(i => i.image).filter(Boolean))];
+      const html = images.map(img => `
+        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          <img src="${img}" alt="" class="w-full h-full object-cover" onerror="this.src='/images/placeholder.jpg'">
+        </div>
+      `).join('') || '<p class="text-gray-500 col-span-6 text-center">暂无图片</p>';
+
+      document.getElementById('imageGrid').innerHTML = html;
+    }
+
+    // 渲染统计
+    function renderStats() {
+      // 类型统计
+      const typeStats = {};
+      allContent.forEach(item => {
+        typeStats[item.type] = (typeStats[item.type] || 0) + 1;
+      });
+
+      const typeHtml = Object.entries(typeStats).map(([type, count]) => {
+        const percent = Math.round((count / allContent.length) * 100);
+        return `
+          <div class="flex items-center gap-3">
+            <span class="w-24 text-sm text-gray-600">${typeMap[type]}</span>
+            <div class="flex-1 bg-gray-200 rounded-full h-2">
+              <div class="bg-primary-500 h-2 rounded-full" style="width: ${percent}%"></div>
+            </div>
+            <span class="text-sm text-gray-500 w-12 text-right">${count}条</span>
+          </div>
+        `;
+      }).join('') || '<p class="text-gray-500 text-center">暂无数据</p>';
+
+      document.getElementById('typeStats').innerHTML = typeHtml;
+
+      // 分类统计
+      const catStats = {};
+      allContent.forEach(item => {
+        catStats[item.category] = (catStats[item.category] || 0) + 1;
+      });
+
+      const catHtml = Object.entries(catStats).map(([cat, count]) => {
+        const percent = Math.round((count / allContent.length) * 100);
+        return `
+          <div class="flex items-center gap-3">
+            <span class="w-24 text-sm text-gray-600">${categoryMap[cat]}</span>
+            <div class="flex-1 bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-500 h-2 rounded-full" style="width: ${percent}%"></div>
+            </div>
+            <span class="text-sm text-gray-500 w-12 text-right">${count}条</span>
+          </div>
+        `;
+      }).join('') || '<p class="text-gray-500 text-center">暂无数据</p>';
+
+      document.getElementById('categoryStatsDetail').innerHTML = catHtml;
+    }
+
+    // 显示Toast
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const msg = document.getElementById('toastMessage');
+
+      const icons = {
+        success: 'fa-check-circle text-green-500',
+        error: 'fa-times-circle text-red-500',
+        info: 'fa-info-circle text-blue-500'
+      };
+
+      icon.className = `fas ${icons[type]}`;
+      msg.textContent = message;
+
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    // 防抖函数
+    function debounce(fn, delay) {
+      let timer = null;
+      return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    // 更新时间
+    function updateTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleString('zh-CN', { 
+        year: 'numeric', month: '2-digit', day: '2-digit', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+      });
+      const el = document.getElementById('currentTime');
+      if (el) el.textContent = timeStr;
+    }
+  </script>
+</body>
+</html>
