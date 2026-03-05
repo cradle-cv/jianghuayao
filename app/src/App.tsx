@@ -39,7 +39,18 @@ function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [allContent, setAllContent] = useState<ICHItem[]>([]);
+// 在 HomePage 组件里，useEffect 上方加这个工具函数
+const withBase = (p: string) => {
+  const base = import.meta.env.BASE_URL || '/';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
 
+  // 允许 p 是：
+  // images/a.jpg
+  // ./images/a.jpg
+  // /images/a.jpg
+  const cleanPath = p.replace(/^[./]+/, '').replace(/^\/+/, '');
+  return `${cleanBase}${cleanPath}`;
+};
   // 从JSON文件加载数据
   useEffect(() => {
     const loadContent = async () => {
@@ -50,10 +61,10 @@ function HomePage() {
           const parsed = JSON.parse(localData);
           setAllContent(parsed);
         } else {
-          // 从JSON文件加载默认数据
-          const response = await fetch('/data/content.json');
-          const data = await response.json();
-          setAllContent(data.content);
+          // 从JSON文件加载默认数据 (路径改为相对路径 ./)
+          const response = await fetch(withBase('data/content.json'));
+const data = await response.json();
+setAllContent(data.content);
         }
       } catch (error) {
         console.error('加载数据失败:', error);
@@ -152,7 +163,7 @@ function HomePage() {
               <a href="#content" className="text-gray-700 hover:text-amber-600 transition-colors">内容展示</a>
               <a href="#about" className="text-gray-700 hover:text-amber-600 transition-colors">关于我们</a>
               <a 
-                href="/admin/index.html" 
+                href="./admin/index.html"  // 改为相对路径
                 target="_blank"
                 className="flex items-center text-gray-700 hover:text-amber-600 transition-colors"
               >
@@ -179,7 +190,7 @@ function HomePage() {
               <a href="#content" className="block py-2 text-gray-700">内容展示</a>
               <a href="#about" className="block py-2 text-gray-700">关于我们</a>
               <a 
-                href="/admin/index.html" 
+                href="./admin/index.html"  // 改为相对路径
                 target="_blank"
                 className="block py-2 text-gray-700 flex items-center"
               >
@@ -195,8 +206,7 @@ function HomePage() {
       <section id="home" className="relative h-[600px] overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: 'url(/images/hero-bg.jpg)' }}
-        >
+style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
@@ -256,7 +266,9 @@ function HomePage() {
               >
                 <div 
                   className="h-48 bg-cover bg-center group-hover:scale-105 transition-transform duration-300"
-                  style={{ backgroundImage: `url(${category.coverImage})` }}
+                  style={{
+  backgroundImage: `url(${withBase(category.coverImage)})`
+}}  // 注意：这里依赖 ichContent.ts 中的路径
                 />
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -346,10 +358,10 @@ function HomePage() {
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden h-full">
                   <div 
                     className="h-40 bg-cover bg-center"
-                    style={{ 
-                      backgroundImage: `url(${item.image})`,
-                      backgroundColor: '#f3f4f6'
-                    }}
+                    style={{
+  backgroundImage: `url(${withBase(item.image)})`,
+  backgroundColor: '#f3f4f6'
+}}
                   />
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -452,16 +464,16 @@ function HomePage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <img 
-                src="/images/categories/changguwu-cover.jpg" 
-                alt="瑶族长鼓舞" 
-                className="rounded-lg shadow-lg"
-              />
-              <img 
-                src="/images/categories/zhijin-cover.jpg" 
-                alt="瑶族织锦" 
-                className="rounded-lg shadow-lg mt-8"
-              />
+              <img
+  src={withBase('images/categories/changguwu-cover.jpg')}
+  alt="瑶族长鼓舞"
+  className="rounded-lg shadow-lg"
+/>
+<img
+  src={withBase('images/categories/zhijin-cover.jpg')}
+  alt="瑶族织锦"
+  className="rounded-lg shadow-lg mt-8"
+/>
             </div>
           </div>
         </div>

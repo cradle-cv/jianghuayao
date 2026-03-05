@@ -108,7 +108,7 @@ export default function ArticlePage() {
             alt={article.title}
             className="w-full h-auto max-h-[500px] object-cover rounded-2xl shadow-lg"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = '/images/placeholder.jpg'
+              (e.target as HTMLImageElement).src = './images/placeholder.jpg'
             }}
           />
         </div>
@@ -141,7 +141,7 @@ export default function ArticlePage() {
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/placeholder.jpg'
+                        (e.target as HTMLImageElement).src = './images/placeholder.jpg'
                       }}
                     />
                   </div>
