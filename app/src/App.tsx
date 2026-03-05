@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { 
-  Routes, Route, Link
-} from 'react-router-dom';
-import { 
-  Drum, Scissors, Calendar, Music, Heart, 
+import { Routes, Route, Link } from 'react-router-dom';
+import {
+  Drum, Scissors, Calendar, Music, Heart,
   MapPin, Phone, Mail, ChevronRight, Menu, X,
   Search, ArrowLeft, Settings
 } from 'lucide-react';
@@ -15,6 +13,19 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ichCategories } from './data/ichContent';
 import ArticlePage from './pages/ArticlePage';
 import './App.css';
+
+/**
+ * 统一处理静态资源与数据文件路径
+ * 兼容 Vite base: './' 与 base: '/jianghuayao/'
+ * 返回绝对 URL，避免在 /article/:id 这种路由下相对路径解析跑偏
+ */
+const withBase = (p: string) => {
+  const rawBase = import.meta.env.BASE_URL || '/';
+  const base = rawBase === './' ? '/' : rawBase;
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const cleanPath = p.replace(/^[./]+/, '').replace(/^\/+/, '');
+  return new URL(cleanBase + cleanPath, window.location.origin).toString();
+};
 
 // 内容数据接口
 interface ICHItem {
@@ -39,37 +50,28 @@ function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [allContent, setAllContent] = useState<ICHItem[]>([]);
-// 在 HomePage 组件里，useEffect 上方加这个工具函数
-const withBase = (p: string) => {
-  const base = import.meta.env.BASE_URL || '/';
-  const cleanBase = base.endsWith('/') ? base : `${base}/`;
 
-  // 允许 p 是：
-  // images/a.jpg
-  // ./images/a.jpg
-  // /images/a.jpg
-  const cleanPath = p.replace(/^[./]+/, '').replace(/^\/+/, '');
-  return `${cleanBase}${cleanPath}`;
-};
   // 从JSON文件加载数据
   useEffect(() => {
     const loadContent = async () => {
       try {
-        // 首先尝试从localStorage加载（如果有后台更新的数据）
         const localData = localStorage.getItem('jianghua_ich_content');
         if (localData) {
           const parsed = JSON.parse(localData);
           setAllContent(parsed);
-        } else {
-          // 从JSON文件加载默认数据 (路径改为相对路径 ./)
-          const response = await fetch(withBase('data/content.json'));
-const data = await response.json();
-setAllContent(data.content);
+          return;
         }
+
+        const response = await fetch(withBase('data/content.json'));
+        if (!response.ok) throw new Error(`content.json HTTP ${response.status}`);
+
+        const data = await response.json();
+        setAllContent(data.content);
       } catch (error) {
         console.error('加载数据失败:', error);
       }
     };
+
     loadContent();
   }, []);
 
@@ -92,22 +94,21 @@ setAllContent(data.content);
 
   // 过滤内容并按更新时间倒序排列
   const getFilteredContent = () => {
-    let content = selectedCategory 
-      ? getCategoryContent(selectedCategory) 
+    let content = selectedCategory
+      ? getCategoryContent(selectedCategory)
       : [...allContent];
-    
+
     if (searchQuery) {
-      content = content.filter(item => 
+      content = content.filter(item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.content.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     if (activeTab !== 'all') {
       content = content.filter(item => item.type === activeTab);
     }
-    
-    // 按更新时间倒序排列（最新的在前面）
+
     return content.sort((a, b) => {
       const dateA = new Date(a.updatedAt || '2000-01-01');
       const dateB = new Date(b.updatedAt || '2000-01-01');
@@ -156,23 +157,24 @@ setAllContent(data.content);
                 江华非遗资源库
               </span>
             </Link>
-            
+
             <div className="hidden md:flex items-center space-x-8">
               <a href="#home" className="text-gray-700 hover:text-amber-600 transition-colors">首页</a>
               <a href="#categories" className="text-gray-700 hover:text-amber-600 transition-colors">非遗类别</a>
               <a href="#content" className="text-gray-700 hover:text-amber-600 transition-colors">内容展示</a>
               <a href="#about" className="text-gray-700 hover:text-amber-600 transition-colors">关于我们</a>
-              <a 
-                href="./admin/index.html"  // 改为相对路径
+              <a
+                href={withBase('admin/index.html')}
                 target="_blank"
+                rel="noreferrer"
                 className="flex items-center text-gray-700 hover:text-amber-600 transition-colors"
               >
                 <Settings className="w-4 h-4 mr-1" />
                 后台管理
               </a>
             </div>
-            
-            <button 
+
+            <button
               className="md:hidden p-2"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
@@ -180,7 +182,7 @@ setAllContent(data.content);
             </button>
           </div>
         </div>
-        
+
         {/* 移动端菜单 */}
         {isMenuOpen && (
           <div className="md:hidden bg-white border-t">
@@ -189,9 +191,10 @@ setAllContent(data.content);
               <a href="#categories" className="block py-2 text-gray-700">非遗类别</a>
               <a href="#content" className="block py-2 text-gray-700">内容展示</a>
               <a href="#about" className="block py-2 text-gray-700">关于我们</a>
-              <a 
-                href="./admin/index.html"  // 改为相对路径
+              <a
+                href={withBase('admin/index.html')}
                 target="_blank"
+                rel="noreferrer"
                 className="block py-2 text-gray-700 flex items-center"
               >
                 <Settings className="w-4 h-4 mr-2" />
@@ -204,11 +207,13 @@ setAllContent(data.content);
 
       {/* Hero区域 */}
       <section id="home" className="relative h-[600px] overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
-style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
+          style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}
+        >
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
         </div>
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="max-w-2xl text-white">
             <Badge className="mb-4 bg-amber-500/80 text-white border-0">
@@ -224,16 +229,16 @@ style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
               是瑶族文化的富集地和活态传承典范。
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-amber-500 hover:bg-amber-600 text-white"
                 onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 探索非遗 <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Button
+                size="lg"
+                variant="outline"
                 className="border-white text-white hover:bg-white/10"
                 onClick={() => document.getElementById('content')?.scrollIntoView({ behavior: 'smooth' })}
               >
@@ -253,10 +258,10 @@ style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
               江华拥有丰富的非物质文化遗产，涵盖舞蹈、技艺、节庆、音乐、医药等多个领域
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {ichCategories.map((category) => (
-              <Card 
+              <Card
                 key={category.id}
                 className="group cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden"
                 onClick={() => {
@@ -264,15 +269,13 @@ style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
                   document.getElementById('content')?.scrollIntoView({ behavior: 'smooth' });
                 }}
               >
-                <div 
+                <div
                   className="h-48 bg-cover bg-center group-hover:scale-105 transition-transform duration-300"
-                  style={{
-  backgroundImage: `url(${withBase(category.coverImage)})`
-}}  // 注意：这里依赖 ichContent.ts 中的路径
+                  style={{ backgroundImage: `url(${withBase(category.coverImage)})` }}
                 />
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div 
+                    <div
                       className="w-12 h-12 rounded-lg flex items-center justify-center"
                       style={{ backgroundColor: category.color + '20', color: category.color }}
                     >
@@ -304,7 +307,7 @@ style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">非遗内容展示</h2>
             <p className="text-lg text-gray-600">
-              {selectedCategory 
+              {selectedCategory
                 ? `浏览${ichCategories.find(c => c.id === selectedCategory)?.name}的精彩内容`
                 : '浏览全部200条非遗内容，包括文艺作品、新闻动态、技法知识、传承故事'
               }
@@ -324,8 +327,8 @@ style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
                 />
               </div>
               {selectedCategory && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setSelectedCategory(null)}
                   className="flex items-center"
                 >
@@ -334,7 +337,7 @@ style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
                 </Button>
               )}
             </div>
-            
+
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full md:w-auto">
                 <TabsTrigger value="all">全部</TabsTrigger>
@@ -347,21 +350,21 @@ style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
             </Tabs>
           </div>
 
-          {/* 内容网格 - 点击跳转到文章页面 */}
+          {/* 内容网格 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {getFilteredContent().map((item) => (
-              <Link 
+              <Link
                 key={item.id}
                 to={`/article/${item.id}`}
                 className="block"
               >
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden h-full">
-                  <div 
+                  <div
                     className="h-40 bg-cover bg-center"
                     style={{
-  backgroundImage: `url(${withBase(item.image)})`,
-  backgroundColor: '#f3f4f6'
-}}
+                      backgroundImage: `url(${withBase(item.image)})`,
+                      backgroundColor: '#f3f4f6'
+                    }}
                   />
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -463,17 +466,18 @@ style={{ backgroundImage: `url(${withBase('images/hero-bg.jpg')})` }}        >
                 </div>
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <img
-  src={withBase('images/categories/changguwu-cover.jpg')}
-  alt="瑶族长鼓舞"
-  className="rounded-lg shadow-lg"
-/>
-<img
-  src={withBase('images/categories/zhijin-cover.jpg')}
-  alt="瑶族织锦"
-  className="rounded-lg shadow-lg mt-8"
-/>
+                src={withBase('images/categories/changguwu-cover.jpg')}
+                alt="瑶族长鼓舞"
+                className="rounded-lg shadow-lg"
+              />
+              <img
+                src={withBase('images/categories/zhijin-cover.jpg')}
+                alt="瑶族织锦"
+                className="rounded-lg shadow-lg mt-8"
+              />
             </div>
           </div>
         </div>
